@@ -5,9 +5,48 @@ import NetworkChart from '@/components/NetworkChart';
 import ProcessList from '@/components/ProcessList';
 import LeakMeter from '@/components/LeakMeter';
 import { useSimulation } from '@/context/SimulationContext';
+import { useEffect } from "react";
+import { api } from "@/lib/api";
 
 export default function Dashboard() {
-  const { countdown, state } = useSimulation();
+  const {
+    countdown,
+    state,
+    setCpuHistory,
+    setNetworkHistory
+  } = useSimulation();
+
+  // 🔥 Inject mock backend data
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      try {
+        const data = await api.getLiveMetrics();
+
+        setCpuHistory(prev => [...prev.slice(-29), data.cpu]);
+        setNetworkHistory(prev => [...prev.slice(-29), data.network_out]);
+      } catch (err) {
+        console.error("Mock API failed:", err);
+      }
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, [setCpuHistory, setNetworkHistory]);
+
+  const { triggerBackendAttack } = useSimulation();
+
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      const incident = await api.getIncident();
+
+      if (incident.status === "active") {
+        triggerBackendAttack(incident.auto_containment_in);
+      }
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+
 
   return (
     <div className="space-y-6">

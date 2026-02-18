@@ -9,6 +9,7 @@ export const useSimulation = () => {
   return ctx
 }
 
+
 export const SimProvider = ({ children }) => {
   const [state, setState] = useState("normal")
   const [countdown, setCountdown] = useState(45)
@@ -37,6 +38,19 @@ export const SimProvider = ({ children }) => {
 
   const attackStartRef = useRef(attackStartTime)
   attackStartRef.current = attackStartTime
+
+  const triggerBackendAttack = useCallback((remainingTime) => {
+    if (stateRef.current !== "normal") return
+
+    setState("attack")
+    setCountdown(remainingTime ?? 45)
+
+    // fake start time so reports & duration still work
+    setAttackStartTime(Date.now() - (45 - (remainingTime ?? 45)) * 1000)
+
+    setLeakPercent(0)
+    startAlarm()
+  }, [])
 
   // generate id fallback
   const genId = () =>
@@ -167,6 +181,7 @@ export const SimProvider = ({ children }) => {
         setAutoContainment,
         alertDelay,
         setAlertDelay,
+        triggerBackendAttack
       }}
     >
       {children}
